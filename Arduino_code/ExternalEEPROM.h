@@ -22,17 +22,17 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 #define ADDR_BYTES 2
 #define DATA_BITS 8
 
+/* MASKS */
 #define PAGE_ID_SHIFT 6
 #define PAGE_ID_MASK  0xFFC0
 #define PAGE_POS_MASK 0x003F
 
-#define DELAY_PULSE 1     // us
-#define DELAY_WRITING 15  // ms
-#define DELAY_READING 50  // us
-#define DELAY_PAGE_WRITING 30  // us (each byte must be written within 150us of the previous byte)
-
-#define MAX_READING_BUFFER_LENGTH 32
-#define MAX_WRITING_PAGE_LENGTH 64
+#define SET_SER_PIN   B00000100   // SER_PIN is D10 so is PB2
+#define RESET_SER_PIN B11111011
+#define SET_SCK_PIN   B00001000   // SCK_PIN is D11 so is PB3
+#define RESET_SCK_PIN B11110111
+#define SET_RCK_PIN   B00010000   // RCK_PIN is D12 so is PB4
+#define RESET_RCK_PIN B11101111
 
 #define CE_MASK 0x01
 #define OE_MASK 0x02
@@ -44,9 +44,23 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 #define CONTROL_WRITE   (!WE_MASK |  OE_MASK | !CE_MASK)   // 010
 #define CONTROL_SDP     (!WE_MASK |  OE_MASK |  CE_MASK)   // 011
 
+
+/* DELAYS */
+#define DELAY_PULSE 1     // us
+#define DELAY_WRITING 11  // ms
+#define DELAY_READING 50  // us
+#define DELAY_PAGE_WRITING 30  // us (each byte must be written within 150us of the previous byte)
+
+
+/* LENGTHS */
+#define MAX_READING_BUFFER_LENGTH 32
+#define MAX_WRITING_PAGE_LENGTH 64
+
+
 /* STATUS WORDS */
 const byte WRITING = 'w';
 const byte READING = 'r';
+
 
 class ExternalEEPROM {
   public:

@@ -37,7 +37,6 @@ uint8_t ExternalEEPROM::read(uint16_t address) {
 
   // Poni gli address in uscita
   q_setAddress(address);
-  //delayMicroseconds(DELAY_READING);
   // Leggi il dato
   uint8_t data = readDataPin();
 
@@ -138,7 +137,6 @@ uint8_t* ExternalEEPROM::read(uint16_t startAddress, uint8_t length) {
   setControlBits(CONTROL_READ);
   for (uint16_t i = 0; i < length; i++) {
     q_setAddress(startAddress + i);
-    //delayMicroseconds(DELAY_READING);
     buffer[i] = readDataPin();
   }
   setControlBits(CONTROL_DISABLE);
@@ -175,17 +173,17 @@ void ExternalEEPROM::q_setAddress(uint16_t address) {
   for (int i = ADDR_BITS - 1; i >= 0; i--) {
     // Costruisci la maschera, controlla il bit e se è uno fai la OR con il bit giusto di PORTB altrimenti fai la AND con 0
     if((address &  (1 << i)) != 0)
-      PORTB |= B00000100;   // SER_PIN è il D10 e quindi è il PB2
+      PORTB |= SET_SER_PIN;   // SER_PIN è il D10 e quindi è il PB2
     else
-      PORTB &= B11111011;
+      PORTB &= RESET_SER_PIN;
       
     // Fallo salvare allo shift register (flashando un HIGH sul pin SCK)
-    PORTB |= B00001000;
-    PORTB &= B11110111;
+    PORTB |= SET_SCK_PIN;
+    PORTB &= RESET_SCK_PIN;
   }
   // Aggiorna i latch in uscita flashando un HIGH su RCK
-  PORTB |= B00010000;
-  PORTB &= B11101111;
+  PORTB |= SET_RCK_PIN;
+  PORTB &= RESET_RCK_PIN;
 }
 
 /*
@@ -254,14 +252,11 @@ void ExternalEEPROM::q_putOnDataPin(uint8_t data) {
 */
 void ExternalEEPROM::pulse(byte pin, boolean type) {
   digitalWrite(pin, type);
-  //delay(2000);
   digitalWrite(pin, !type);
-  //delay(2000);
 }
 
 void ExternalEEPROM::setControlBits(uint8_t state) {
-  digitalWrite(CE_PIN, (state & CE_MASK) != 0);
-  digitalWrite(OE_PIN, (state & OE_MASK) != 0);
-  digitalWrite(WE_PIN, (state & WE_MASK) != 0);
-  delayMicroseconds(DELAY_PULSE);
+  digitalWrite(CE_PIN, (state & CE_MASK));
+  digitalWrite(OE_PIN, (state & OE_MASK));
+  digitalWrite(WE_PIN, (state & WE_MASK));
 }

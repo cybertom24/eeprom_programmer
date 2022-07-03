@@ -60,7 +60,7 @@ public class Eeprom_28C256 extends Eeprom {
 		return (data == realData);
 	}
 	
-	private boolean checkWrite() {
+	public boolean checkWrite() {
 		int randomAddr = (int) (Math.random() * maxAddress);
 		byte old = readSingle(randomAddr);
 		boolean success = writeSingle(randomAddr, (byte) (old + 1));

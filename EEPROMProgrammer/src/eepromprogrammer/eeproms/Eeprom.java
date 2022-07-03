@@ -19,4 +19,6 @@ public abstract class Eeprom {
 	public abstract boolean writeMultiple(long address, byte[] data);
 	
 	public abstract boolean checkSingle(long address, byte data);
+
+	public abstract boolean checkWrite();
 }

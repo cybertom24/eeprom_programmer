@@ -18,7 +18,7 @@ public class App {
 
 	public static void main(String[] args) throws SerialPortInvalidPortException, IOException, InterruptedException {
 
-		String[] prova = { "ciao", "-path=C:\\Users\\savol\\Desktop\\lettura.bin", "-cicic=asdsad", "", "-action=every" };
+		String[] prova = { "ciao", "-path=lettura.bin", "-cicic=asdsad", "", "-action=every" };
 
 		Option option = Option.parseArguments(prova);
 		option.overrideUndefined(DEFAULT_OPTION);
@@ -51,6 +51,7 @@ public class App {
 			menu.add("Write single");
 			menu.add("Write multiple");
 			menu.add("Write file");
+			menu.add("Check writing");
 
 			int selection = menu.select();
 			while (selection != 0) {
@@ -83,6 +84,12 @@ public class App {
 							option.setPath(Input.askString("Insert file name"));
 	
 						manager.writeFile(new File(option.getPath()));
+						break;
+					case 7:
+						if(eeprom.checkWrite())
+							System.out.println("Writing is enabled");
+						else
+							System.out.println("Writing is not enabled");
 						break;
 				}
 

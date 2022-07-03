@@ -1,0 +1,78 @@
+void ExternalEEPROM::enableDataProtection() {
+  // Read datasheet to understand why are those bytes like that
+  setControlBits(CONTROL_SDP);
+
+  q_setAddress(0x5555);
+  q_putOnDataPin(0xAA);
+  // flasha WE_PIN (A2)
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x2AAA);
+  q_putOnDataPin(0x55);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x5555);
+  q_putOnDataPin(0xA0);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  delay(DELAY_WRITING);
+  setControlBits(CONTROL_DISABLE);
+}
+
+void ExternalEEPROM::disableDataProtection() {
+  // Read datasheet to understand why are those bytes like that
+  setControlBits(CONTROL_SDP);
+
+  q_setAddress(0x5555);
+  q_putOnDataPin(0xAA);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x2AAA);
+  q_putOnDataPin(0x55);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x5555);
+  q_putOnDataPin(0x80);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+  
+  q_setAddress(0x5555);
+  q_putOnDataPin(0xAA);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x2AAA);
+  q_putOnDataPin(0x55);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  q_setAddress(0x5555);
+  q_putOnDataPin(0x20);
+  // flasha WE_PIN (A2) LOW
+  PORTC &= B11111110;
+  //delayMicroseconds(DELAY_SDP);
+  PORTC |= B00000001;
+
+  delay(DELAY_WRITING);
+  setControlBits(CONTROL_DISABLE);
+}

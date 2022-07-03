@@ -1,0 +1,37 @@
+Arduino NANO ha a disposizione le porte:
+D2...D13 (11 pin) I/O digitale
+A0...A5 (6 pin) I analogico/digitale e O digitale
+A6 e A7 solo I analogico (no O)
+D0 e D1 riservati per la seriale
+
+Scelgo: 
+Da D2 a D9 i DATA pin (quelli che scriveranno e leggeranno i dati nella EEPROM)
+D10 = SER (shift register)
+D11 = SCK (shift register)
+D12 = RCK (shift register)
+D13 = _G (shift register = _OE)
+A5 = SCL (shift register)
+A0 = _CE (eeprom)
+A1 = _OE (eeprom)
+A2 = _WE (eeprom)
+
+Funzionamento 74HC595:
+_OE (pin 13) = Output Enable (attivo basso). Se disattivo (quindi in HIGH) pone le uscite in stato di HIGH Z (alta impedenza), altrimenti pone sulle uscite lo stato della memoria interna
+RCLK (pin 12) = Register CLocK. Diverso dallo shif register, quando viene dato l'impulso i latch posti sulle uscite (storage register) si aggiornano con i dati contenuti nello shift register. 
+_SRCLR (pin 10) = Shift Register CLeaR (attivo basso). Quando attivato (quindi in LOW) resetta gli shift register portandoli a 0
+SRCLK (pin 11) = Shift Register CLocK. Ogni impulso fa traslare verso il fondo i dati nello shift register aggiungendo nel primo (A) il dato posto su SER
+SER (pin 14) = SERial input. È l'ingresso dei dati seriali da porre nelle uscite
+Qa (pin 15), Qb...Qh (pin 1...7) = Uscite collegate allo storage register (latch prima delle uscite)
+Qh' (pin 16) = Serial out. Uscita che serve a concatenare più 74HC595
+
+Algoritmo:
+0) RCLK, SRCLK entrambi a LOW (fermi), SRCLR a HIGH, _OE a LOW
+1) Disattiva le uscite portando _OE a HIGH
+2) Resetta cancellando i dati nello shift register dando un impulso LOW a _SRCLR
+3) Riempi lo shift register:
+	3a) Poni il bit su SER
+	3b) Dai un impulso HIGH a SRCLK
+	torna a 3a e continua così finchè non hai spedito tutti i bit necessari
+4) Dai un impulso HIGH a RCLK in modo da aggiornare lo storage register e preparare le uscite
+5) Porta _OE a LOW così da porre sulle uscite i bit che hai appena passato
+torna a 0) per inviare un nuovo dato 

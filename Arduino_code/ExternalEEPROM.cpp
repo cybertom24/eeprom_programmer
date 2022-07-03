@@ -1,7 +1,7 @@
 #include "ExternalEEPROM.h"
 
 /*
-   Costructor. It needs all of the pins used
+   Costructor. Initialize all of the pins and their status
 */
 ExternalEEPROM::ExternalEEPROM() {
   /* Set pin mode */
@@ -33,11 +33,12 @@ ExternalEEPROM::ExternalEEPROM() {
 */
 uint8_t ExternalEEPROM::read(uint16_t address) {
   // Assicurati che OE sia attivo (low) e WE disattivo
-  setControlBits(CONTROL_READ);
+  setControlBits(CONTROL_ENABLE);
 
   // Poni gli address in uscita
   q_setAddress(address);
   // Leggi il dato
+  setControlBits(CONTROL_READ);
   uint8_t data = readDataPin();
 
   // Resetta
@@ -134,12 +135,8 @@ uint8_t* ExternalEEPROM::read(uint16_t startAddress, uint8_t length) {
     length = MAX_READING_BUFFER_LENGTH;
   uint8_t* buffer = malloc(length * sizeof(uint8_t));
 
-  setControlBits(CONTROL_READ);
-  for (uint16_t i = 0; i < length; i++) {
-    q_setAddress(startAddress + i);
-    buffer[i] = readDataPin();
-  }
-  setControlBits(CONTROL_DISABLE);
+  for (uint16_t i = 0; i < length; i++)
+    buffer[i] = read(startAddress + i);
 
   return buffer;
 }

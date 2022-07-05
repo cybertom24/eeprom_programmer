@@ -48,7 +48,6 @@ uint8_t ExternalEEPROM::read(uint16_t address) {
 
 /*
    Write on the EEPROM the byte passed at a specified address
-   Duration pre-delay: ~475us (media con 192 campioni) (max: 484us)
 */
 void ExternalEEPROM::write(uint16_t address, uint8_t data) {  
   setControlBits(CONTROL_ENABLE);
@@ -71,8 +70,6 @@ void ExternalEEPROM::write(uint16_t address, uint8_t data) {
    The page is automatically identified using the starting address passed as an argument.
    Any additional byte will be ignored.
    Returns: Number of bytes written
-
-   INUTILE: troppo lento il setup degli address (trovare il modo di velocizzarlo)
 */
 int ExternalEEPROM::pageWrite(uint16_t address, int length, uint8_t* data) {
   // Recupera l'id della pagina
@@ -82,50 +79,37 @@ int ExternalEEPROM::pageWrite(uint16_t address, int length, uint8_t* data) {
   // Controlla che la lunghezza non ecceda la pagina
   if (length > MAX_WRITING_PAGE_LENGTH - pagePos)
     length = MAX_WRITING_PAGE_LENGTH - pagePos;
-
-  Serial.print("Wrinting on page 0x");
-  Serial.print(pageId, HEX);
-  Serial.print(" starting from 0x");
-  Serial.print(pagePos, HEX);
-  Serial.print(" with a length of ");
-  Serial.println(length, DEC);  
   
-  setControlBits(CONTROL_DISABLE);
-
+  setControlBits(CONTROL_ENABLE);
+  uint16_t addr = (pageId | pagePos);
   for (uint16_t i = 0; i < length; i++) {
-    uint16_t addr = pageId + pagePos + i;
-    
-    q_setAddress(addr);
-    putOnDataPin(data[i]);
-
-    setControlBits(CONTROL_WRITE);
-    // The delay is managed inside the method setControlBits
-    setControlBits(CONTROL_DISABLE);
-
-    delayMicroseconds(DELAY_PAGE_WRITING);
+    q_setAddress(addr + i);
+    q_putOnDataPin(data[i]);
+    // WE is active-low
+    PORTC &= (RESET_WE_PIN);
+    PORTC |= (SET_WE_PIN);
   }
-  delay(DELAY_WRITING);
-
-  // Reset
   setControlBits(CONTROL_DISABLE);
+  delay(DELAY_WRITING);
   
   return length;
 }
 
-
+/*
 void ExternalEEPROM::write(uint16_t address, int length, uint8_t* data) {
   for(int i = 0; i < length; i++) {
     write(address + i, data[i]);
   }
 }
+*/
 
-//void ExternalEEPROM::write(uint16_t address, int length, uint8_t* data) {
-//  int i = 0;
-//  while(i < length) {
-//    // Scrivi e aggiona i dei byte che sono stati scritti (e quindi cambia pagina)
-//    i += pageWrite(address + i, length - i, &data[i]);
-//  }  
-//}
+void ExternalEEPROM::write(uint16_t address, int length, uint8_t* data) {
+  int i = 0;
+  while(i < length) {
+    // Scrivi e aggiona i dei byte che sono stati scritti (e quindi cambia pagina)
+    i += pageWrite(address + i, length - i, &data[i]);
+  }  
+}
 
 /*
    Remember to free the memory after usage
@@ -238,9 +222,10 @@ void ExternalEEPROM::putOnDataPin(uint8_t data) {
 
 void ExternalEEPROM::q_putOnDataPin(uint8_t data) {
   setMode(WRITING);
+  PORTD &= RESET_PORTD;
   PORTD |= data << 2;
-  uint8_t mask = data >> 6;
-  PORTB |= mask;
+  PORTB &= RESET_PORTB;
+  PORTB |= data >> 6;
 }
 
 /*

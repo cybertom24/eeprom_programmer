@@ -73,7 +73,8 @@ final class Option {
 			
 			result = res.split(parameterStart)[1];
 		} catch (IndexOutOfBoundsException e) {
-			e.printStackTrace();
+			System.out.println("> No \"" + parameterStart + "\" argument found");
+			//e.printStackTrace();
 		}
 		
 		return result;

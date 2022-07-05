@@ -20,7 +20,8 @@
 #define CONSOLE_READ_SINGLE       'r'     // r 32       (read address 32)
 #define CONSOLE_READ_MULTIPLE     'R'     // R 32;100   (read from address 32 to address 100)
 #define CONSOLE_WRITE_SINGLE      'w'     // w 32;100   (write in address 32 the number 100)
-#define CONSOLE_TEST              't'
+#define CONSOLE_TEST1             't'
+#define CONSOLE_TEST2             'T'
 #define SCRIPT_READ_SINGLE        0x10    // 0x10 [2 byte address]                (read from addr F3A0: 0x10 0xA0 0xF3)
 #define SCRIPT_READ_MULTIPLE      0x11    // 0x10 [2 byte fromAddress] [1 byte length]               (read from addr C3A0 to addr E001: 0x11 0xA0 0xC3 distance in hex)
 #define SCRIPT_WRITE_SINGLE       0x20    // 0x20 [2 byte address] [1 byte data]  (write to addr F3A0 the data 1C: 0x10 0xA0 0xF3 0x1C) 
@@ -42,7 +43,7 @@ void setup() {
   Serial.begin(BAUD_RATE);
 }
 
-void loop() {  
+void loop() {
   if (Serial.available()) {
     byte command = Serial.read();
     switch (command) {
@@ -81,7 +82,7 @@ void loop() {
           Serial.print(fromAddr, HEX);
           Serial.print(": ");
 
-          while (fromAddr <= toAddr) {
+          while (fromAddr < toAddr) {
             uint16_t length = NEWLINE_EVERY;
             if (toAddr - fromAddr < length)
               length = toAddr - fromAddr;
@@ -117,18 +118,25 @@ void loop() {
           eeprom.write(addr, data);
           break;
         }
-      case CONSOLE_TEST: {
-          Serial.println("> Test");
-          uint8_t data[64] = { 13, 2, 3, 4, 5, 6, 7, 8,
-                               9, 10, 11, 12, 13, 14, 15, 16,
-                               17, 18, 19, 20, 21, 22, 23, 24,
-                               25, 26, 27, 28, 29, 30, 31, 32,
-                               1, 2, 3, 4, 5, 6, 7, 8,
-                               9, 10, 11, 12, 13, 14, 15, 16,
-                               17, 18, 19, 20, 21, 22, 23, 24,
-                               25, 26, 27, 28, 29, 30, 31, 32
+      case CONSOLE_TEST1: {
+          Serial.println("> Test 1");
+          uint8_t data[28] = {  1,  2,  3,  4,  5,  6,  7,
+                                8,  9, 10, 11, 12, 13, 14,
+                               15, 16, 17, 18, 19, 20, 21,
+                               22, 23, 24, 25, 26, 27, 28
                              };
-          eeprom.write(150, 64, data);
+          eeprom.write(0, 28, data);
+          Serial.println("finish");
+          break;
+        }
+      case CONSOLE_TEST2: {
+          Serial.println("> Test 2");
+          uint8_t data[28] = { 28, 27, 26, 25, 24, 23, 22,
+                               21, 20, 19, 18, 17, 16, 15,
+                               14, 13, 12, 11, 10,  9,  8,
+                                7,  6,  5,  4,  3,  2,  1
+                             };
+          eeprom.write(0, 28, data);
           Serial.println("finish");
           break;
         }
@@ -153,7 +161,7 @@ void loop() {
           Serial.readBytes(buff, 3);
           uint16_t fromAddr = * (uint16_t *) buff;
           uint8_t length = buff[2];
-          if(length > MAX_DATA_BUFFER_LENGTH)
+          if (length > MAX_DATA_BUFFER_LENGTH)
             length = MAX_DATA_BUFFER_LENGTH;
 
           uint8_t* buffer = eeprom.read(fromAddr, length);
@@ -177,46 +185,46 @@ void loop() {
           Serial.write(SCRIPT_UTIL_READY);
           break;
         }
-        /*
-      case SCRIPT_INIT_WRITE: {
-          uint16_t address = getTwoBytesValue();
+      /*
+        case SCRIPT_INIT_WRITE: {
+        uint16_t address = getTwoBytesValue();
 
-          while (true) {
-            // Invia il comando di "pronto"
-            Serial.write(SCRIPT_UTIL_READY);
-            // Aspetta il comando
-            while (Serial.available() == 0)
-              ;
+        while (true) {
+          // Invia il comando di "pronto"
+          Serial.write(SCRIPT_UTIL_READY);
+          // Aspetta il comando
+          while (Serial.available() == 0)
+            ;
 
-            if (Serial.read() == SCRIPT_UTIL_EOF)
-              break;
+          if (Serial.read() == SCRIPT_UTIL_EOF)
+            break;
 
-            // Recupera la lunghezza del pacchetto
-            uint16_t length = getTwoBytesValue();
+          // Recupera la lunghezza del pacchetto
+          uint16_t length = getTwoBytesValue();
 
-            if (length <= 0) {
-              Serial.write(SCRIPT_ERROR_WRONG_ARG);
-              break;
-            }
-
-            // Alloca abbastanza memoria
-            uint8_t *dataBuff = (uint8_t*) malloc(length * sizeof(uint8_t));
-            // Leggi i dati passati
-            Serial.readBytes(dataBuff, length);
-
-            // Scrivi nella eeprom
-            eeprom.write(address, length, dataBuff);
-
-            // Libera la memoria
-            free(dataBuff);
-            // Aggiorna l'address (controllando che non vada in overflow)
-            if (address + length < address) {
-              Serial.write(SCRIPT_ERROR_OVERFLOW);
-              break;
-            }
-            address += length;
+          if (length <= 0) {
+            Serial.write(SCRIPT_ERROR_WRONG_ARG);
+            break;
           }
-          break;
+
+          // Alloca abbastanza memoria
+          uint8_t *dataBuff = (uint8_t*) malloc(length * sizeof(uint8_t));
+          // Leggi i dati passati
+          Serial.readBytes(dataBuff, length);
+
+          // Scrivi nella eeprom
+          eeprom.write(address, length, dataBuff);
+
+          // Libera la memoria
+          free(dataBuff);
+          // Aggiorna l'address (controllando che non vada in overflow)
+          if (address + length < address) {
+            Serial.write(SCRIPT_ERROR_OVERFLOW);
+            break;
+          }
+          address += length;
+        }
+        break;
         }*/
       default: {
           Serial.println(UTIL_EMPTY);

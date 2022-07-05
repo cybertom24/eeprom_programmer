@@ -34,6 +34,14 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 #define SET_RCK_PIN   B00010000   // RCK_PIN is D12 so is PB4
 #define RESET_RCK_PIN B11101111
 
+#define SET_CE_PIN    B00000001   // CE_PIN is A0 so is PC0
+#define RESET_CE_PIN  B11111110
+#define SET_WE_PIN    B00000100   // WE_PIN is A2 so is PC2
+#define RESET_WE_PIN  B11111011
+
+#define RESET_PORTD   B00000011
+#define RESET_PORTB   B11111100
+
 #define CE_MASK 0x01
 #define OE_MASK 0x02
 #define WE_MASK 0x04
@@ -46,8 +54,8 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 
 
 /* DELAYS */
-#define DELAY_PULSE 1     // us
-#define DELAY_WRITING 11  // ms
+#define DELAY_PULSE 2     // us
+#define DELAY_WRITING 15  // ms
 #define DELAY_READING 50  // us
 #define DELAY_PAGE_WRITING 30  // us (each byte must be written within 150us of the previous byte)
 
@@ -76,7 +84,7 @@ class ExternalEEPROM {
     void disableDataProtection();
     
     
-  //private:
+  private:
     /* METHODS */
     void setMode(byte newMode);
     void setAddress(uint16_t address);

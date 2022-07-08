@@ -16,7 +16,6 @@ public class Eeprom_28C256 extends Eeprom {
 	
 	private ArduinoSerial serial;
 	
-	
 	public Eeprom_28C256(String port) throws SerialPortTimeoutException {
 		super(myName, myMaxAddress);
 		
@@ -57,12 +56,21 @@ public class Eeprom_28C256 extends Eeprom {
 		return response == Commands.UTIL.READY;
 	}
 
+	/**
+	 * Checks if the address contains the data expected
+	 * @param address The address to check
+	 * @param data The data expected
+	 * @return true if the data read is the same as the data passed as parameter
+	 */
 	@Override
 	public boolean checkSingle(long address, byte data) {
-		byte realData = readSingle(address);
-		return (data == realData);
+		return (data == readSingle(address));
 	}
-	
+
+	/**
+	 * Checks if it's possible to write on the EEPROM
+	 * @return true if it's possible to write
+	 */
 	public boolean checkWrite() {
 		int randomAddr = (int) (Math.random() * maxAddress);
 		byte old = readSingle(randomAddr);

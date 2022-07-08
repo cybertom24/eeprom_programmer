@@ -14,20 +14,19 @@ import eepromprogrammer.eeproms.Eeprom_28C256;
 
 public class App {
 
-	public static final Option DEFAULT_OPTION = new Option("COM5", null, Option.ACTION_EVERY);
+	public static final Option DEFAULT_OPTION = new Option("COM5", null, Option.ACTION_EVERY, true);
 
 	public static void main(String[] args) throws SerialPortInvalidPortException, IOException {
 
-		String[] prova = { "ciao", "-path=beemovie-letto.txt", "-cicic=asdsad", "", "-action=every" };
+		String[] prova = { "ciao", "-path=beemovie8.txt", "-cicic=asdsad", "", "-action=every" };
 
-		Option option = Option.parseArguments(prova);
+		Option option = Option.parseArguments(args);
 		option.overrideUndefined(DEFAULT_OPTION);
-		System.out.println(option);
-		System.out.println("\n\n");
+		System.out.println(option + "\n");
 
 		System.out.println("> Opening port...");
 		Eeprom eeprom = new Eeprom_28C256(option.getPort());
-		EepromManager manager = new EepromManager(eeprom);
+		EepromManager manager = new EepromManager(eeprom, option.getPath(), option.getValidate());
 		System.out.println("> Ready!");
 
 		if (option.isAction(Option.ACTION_READ)) {
@@ -37,9 +36,9 @@ public class App {
 		} else if (option.isAction(Option.ACTION_WRITE)) {
 			if(option.getPath() == null)
 				option.setPath(Input.askString("Insert path"));
-			manager.writeFile(new File(option.getPath()));
+			manager.writeFile(new File(option.getPath()), 0, true);
 		} else if (option.isAction(Option.ACTION_EVERY)) {
-			manager.mainLoop(option.getPath());
+			manager.mainLoop();
 			System.exit(0);
 		} else
 			// default

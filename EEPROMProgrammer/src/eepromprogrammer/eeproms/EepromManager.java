@@ -8,6 +8,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.Buffer;
+import java.sql.Array;
+import java.text.FieldPosition;
+import java.util.ArrayList;
 
 import cyberLib.io.Input;
 import cyberLib.io.Menu;
@@ -15,22 +19,28 @@ import cyberLib.io.Printer;
 
 public class EepromManager {
 	
-	
+	private static final int MAX_TRIES = 3;
+	private static final double MAX_ERROR_ARRAY_LENGTH_PERCENTAGE = 0.01;
+	private static final int VALIDATE_BUFFER_LENGTH = 32;
 	private static final int READ_BUFFER_LENGTH = 28;
 	private static final int WRITE_BUFFER_LENGTH = 28;
 	private static final String MAIN_MENU_TITLE = "Main menu";
 	private static final String[] MENU_ENTRIES = { "Exit", "Read single", "Read multiple", "Read all", "Write single",
-			"Write multiple", "Write file", "Check writing"};
+			"Write multiple", "Write file", "Check writing", "Change path", "Toggle validation"};
 	private final Menu mainMenu = new Menu(MAIN_MENU_TITLE);
 	private Eeprom eeprom;
+	private String path;
+	private boolean validate;
 	
-	public EepromManager(Eeprom eeprom) {
+	public EepromManager(Eeprom eeprom, String path, boolean validate) {
 		this.eeprom = eeprom;
 		for(String entry : MENU_ENTRIES)
 			mainMenu.add(entry);
+		this.path = path;
+		this.validate = validate;
 	}
 
-	public boolean mainMenu(String path) {
+	public boolean mainMenu() throws IOException {
 		System.out.println("\n\n");
 		int selection = mainMenu.select();
 		if(selection == 0)
@@ -63,7 +73,7 @@ public class EepromManager {
 				if (path == null)
 					path = Input.askString("Insert file name");
 
-				writeFile(new File(path));
+				writeFile(new File(path), 0, validate);
 				break;
 			case 7:
 				if(eeprom.checkWrite())
@@ -71,13 +81,20 @@ public class EepromManager {
 				else
 					System.out.println("Writing is not enabled");
 				break;
+			case 8:
+				path = Input.askString("Insert new path");
+				break;
+			case 9:
+				validate = !validate;
+				System.out.println("Validate set to " + validate);
+				break;
 		}
 
 		return true;
 	}
 
-	public void mainLoop(String path) {
-		while(mainMenu(path));
+	public void mainLoop() throws IOException {
+		while(mainMenu());
 	}
 
 	public void readSingle() {
@@ -118,16 +135,15 @@ public class EepromManager {
 	 * Metodo per leggere la memoria della eeprom e trascriverla su file
 	 * @param file
 	 */
-	public void readFile(File file) {
+	public void readFile(File file) throws IOException {
 		System.out.println("> Reading the eeprom memory and trascribing it to the file");
 		
 		
 		try(BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file))) {
 			
 			int exProgress = 0;
-			for(long address = 0; address < eeprom.maxAddress; address += READ_BUFFER_LENGTH) {
-				if(address >= eeprom.maxAddress)
-					address = eeprom.maxAddress - 1;
+			long address = 0;
+			while(address < eeprom.maxAddress) {
 				long length = Math.min(READ_BUFFER_LENGTH, eeprom.maxAddress - address);
 				byte[] buffer = eeprom.readMultiple(address, length);
 				
@@ -140,30 +156,29 @@ public class EepromManager {
 					System.out.println("> " + progress + "%");
 					exProgress = progress;
 				}
+
+				address += buffer.length;
 			}
 			System.out.println("> Done");
 			
-		} catch (FileNotFoundException e) {
-			System.err.println("File " + file.getName() + " has not been found");
-			System.err.println("The reading action will not complete");
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 	
-	public void writeFile(File file) {
+	public void writeFile(File file, long startAddress, boolean validate) throws IOException {
 		System.out.println("> Writing the file into eeprom memory");
+
+		if(!eeprom.checkWrite())
+			throw new IOException("Cannot write on EEPROM");
 		
 		try(InputStream inStream = new BufferedInputStream(new FileInputStream(file))) {
 			int exProgress = 0;
 			long address = 0;
-			while(address < eeprom.maxAddress) {
+			long maxAddress = Math.min(eeprom.maxAddress, file.length());
+			while(address < maxAddress) {
 				byte[] buffer = inStream.readNBytes(WRITE_BUFFER_LENGTH);
 				if(buffer.length < 1)
 					break;
-				
-				//Printer.printByteArray(buffer);
-				
+
 				eeprom.writeMultiple(address, buffer);
 				
 				int progress = (int) (100*((double) address / eeprom.maxAddress));
@@ -179,9 +194,73 @@ public class EepromManager {
 		} catch (FileNotFoundException e) {
 			System.err.println("File " + file.getName() + " has not been found");
 			System.err.println("The writing action will not complete");
-		} catch (IOException e) {
-			e.printStackTrace();
+			return;
+		}
+
+		if(!validate)
+			return;
+
+		System.out.println("> Initiating validation process");
+		ArrayList<Cell> cells2beRepaired = validate(file);
+
+		if(cells2beRepaired.isEmpty())
+			return;
+
+		System.out.println("Found " + cells2beRepaired.size() + " with wrong data");
+		System.out.println("> Initiating reparation process");
+		repair(cells2beRepaired);
+		System.out.println("> EEPROM written and ready to be used");
+	}
+
+	public ArrayList<Cell> validate(File expected) throws IOException {
+		ArrayList<Cell> cells = new ArrayList<>();
+
+		// Read the contents of the EEPROM
+		File real = new File(".temp.bin");
+		readFile(real);
+
+		// Find errors
+		try(InputStream inStreamExpected = new BufferedInputStream(new FileInputStream(expected));
+			InputStream inStreamReal = new BufferedInputStream(new FileInputStream(real))) {
+			long maxAddr = Math.min(expected.length(), real.length());
+			long addr = 0;
+			while(addr < maxAddr) {
+				byte[] bufferExpected = inStreamExpected.readNBytes(VALIDATE_BUFFER_LENGTH);
+				if(bufferExpected.length == 0)
+					break;
+
+				byte[] bufferReal = inStreamReal.readNBytes(bufferExpected.length);
+				if(bufferReal.length != bufferExpected.length)
+					throw new IOException("The lengths of the two buffer are different");
+
+				for(int i = 0; i < bufferExpected.length; i++) {
+					if (bufferExpected[i] != bufferReal[i])
+						cells.add(new Cell(addr, bufferExpected[i]));
+				}
+
+				// If there are too many errors
+				if(cells.size() > MAX_ERROR_ARRAY_LENGTH_PERCENTAGE * expected.length())
+					throw new IOException(String.format("Too many errors! Validation process halted at address: 0x%04x", addr));
+
+				addr += bufferExpected.length;
+			}
+		}
+
+		return cells;
+	}
+
+	public void repair(ArrayList<Cell> cells) throws IOException {
+		for(Cell cell : cells) {
+			// Try to repair the cell (max MAX_TRIES iterations)
+			for(int i = 0; i < MAX_TRIES; i++) {
+				if(eeprom.writeSingle(cell.address, cell.data))
+					break;
+			}
+			// If the data has not been written
+			if(eeprom.checkSingle(cell.address, cell.data)) {
+				double progress = 100 * (cells.indexOf(cell) / (double) cells.size());
+				throw new IOException("Repair of " + cell + " failed. Reparation process halted at " + progress + "%");
+			}
 		}
 	}
-		
 }

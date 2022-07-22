@@ -20,7 +20,7 @@ import cyberLib.io.Printer;
 public class EepromManager {
 	
 	private static final int MAX_TRIES = 3;
-	private static final double MAX_ERROR_ARRAY_LENGTH_PERCENTAGE = 0.01;
+	private static final double MAX_ERROR_ARRAY_LENGTH_PERCENTAGE = 0.05;
 	private static final int VALIDATE_BUFFER_LENGTH = 32;
 	private static final int READ_BUFFER_LENGTH = 28;
 	private static final int WRITE_BUFFER_LENGTH = 28;
@@ -136,17 +136,19 @@ public class EepromManager {
 	 * @param file
 	 */
 	public void readFile(File file) throws IOException {
-		System.out.println("> Reading the eeprom memory and trascribing it to the file");
+		System.out.println("> Reading the eeprom memory and transcribing it to the file");
 		
 		
 		try(BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file))) {
-			
 			int exProgress = 0;
 			long address = 0;
 			while(address < eeprom.maxAddress) {
 				long length = Math.min(READ_BUFFER_LENGTH, eeprom.maxAddress - address);
 				byte[] buffer = eeprom.readMultiple(address, length);
-				
+
+				if(buffer.length <= 2)
+					break;
+
 				// Skip the header
 				for(int i = 2; i < buffer.length; i++)
 					outStream.write(buffer[i]);
@@ -157,10 +159,9 @@ public class EepromManager {
 					exProgress = progress;
 				}
 
-				address += buffer.length;
+				address += buffer.length - 2;
 			}
 			System.out.println("> Done");
-			
 		}
 	}
 	
@@ -175,7 +176,8 @@ public class EepromManager {
 			long address = 0;
 			long maxAddress = Math.min(eeprom.maxAddress, file.length());
 			while(address < maxAddress) {
-				byte[] buffer = inStream.readNBytes(WRITE_BUFFER_LENGTH);
+				int length = (int) Math.min(WRITE_BUFFER_LENGTH, maxAddress - address);
+				byte[] buffer = inStream.readNBytes(length);
 				if(buffer.length < 1)
 					break;
 
@@ -203,8 +205,11 @@ public class EepromManager {
 		System.out.println("> Initiating validation process");
 		ArrayList<Cell> cells2beRepaired = validate(file);
 
-		if(cells2beRepaired.isEmpty())
+		if(cells2beRepaired.isEmpty()) {
+			System.out.println("> Nothing has gone wrong. Writing process finished");
 			return;
+		}
+
 
 		System.out.println("Found " + cells2beRepaired.size() + " with wrong data");
 		System.out.println("> Initiating reparation process");
@@ -239,12 +244,17 @@ public class EepromManager {
 				}
 
 				// If there are too many errors
-				if(cells.size() > MAX_ERROR_ARRAY_LENGTH_PERCENTAGE * expected.length())
+				int maxErrors = (int) Math.ceil(MAX_ERROR_ARRAY_LENGTH_PERCENTAGE * expected.length());
+				if(cells.size() > maxErrors)
 					throw new IOException(String.format("Too many errors! Validation process halted at address: 0x%04x", addr));
 
 				addr += bufferExpected.length;
 			}
 		}
+
+		// Remove the temp file
+		if(!real.delete())
+			System.err.println("Cannot delete temp file");
 
 		return cells;
 	}

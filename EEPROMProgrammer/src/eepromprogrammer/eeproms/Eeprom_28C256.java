@@ -4,7 +4,7 @@ import com.fazecast.jSerialComm.SerialPortTimeoutException;
 
 import cyberLib.arduino.ArduinoSerial;
 import cyberLib.arduino.BaudRates;
-import eepromprogrammer.Commands;
+import cyberLib.io.Printer;
 
 public class Eeprom_28C256 extends Eeprom {
 	
@@ -20,9 +20,8 @@ public class Eeprom_28C256 extends Eeprom {
 		super(myName, myMaxAddress);
 		
 		serial = new ArduinoSerial(port, BAUD_RATE);
-		// Wait util the port is ready to communicate with
-		while(!serial.isOpen())
-			;
+		serial.waitForSignal();
+		serial.clear();
 	}
 
 	@Override

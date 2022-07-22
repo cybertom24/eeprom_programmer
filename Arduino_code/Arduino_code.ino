@@ -41,6 +41,8 @@ ExternalEEPROM eeprom = ExternalEEPROM();
 
 void setup() {
   Serial.begin(BAUD_RATE);
+
+  Serial.write(SCRIPT_UTIL_READY);
 }
 
 void loop() {

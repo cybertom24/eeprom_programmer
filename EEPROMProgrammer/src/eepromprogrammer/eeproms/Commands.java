@@ -1,4 +1,4 @@
-package eepromprogrammer;
+package eepromprogrammer.eeproms;
 
 public class Commands {
 	

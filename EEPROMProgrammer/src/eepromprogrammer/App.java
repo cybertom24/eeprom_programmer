@@ -39,9 +39,11 @@ public class App {
 			manager.writeFile(new File(option.getPath()), 0, true);
 		} else if (option.isAction(Option.ACTION_EVERY)) {
 			manager.mainLoop();
-			System.exit(0);
 		} else
 			// default
 			throw new IllegalArgumentException("\"" + option.getAction() + "\" does not represent any action");
+
+		System.out.println("> Exiting program...");
+		System.exit(0);
 	}
 }

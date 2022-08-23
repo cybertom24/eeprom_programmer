@@ -16,7 +16,7 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 // For controlling the EEPROM
 #define CE_PIN A0
 #define OE_PIN A1
-#define WE_PIN A2
+#define WE_PIN A3
 
 #define ADDR_BITS 16
 #define ADDR_BYTES 2
@@ -36,8 +36,8 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 
 #define SET_CE_PIN    B00000001   // CE_PIN is A0 so is PC0
 #define RESET_CE_PIN  B11111110
-#define SET_WE_PIN    B00000100   // WE_PIN is A2 so is PC2
-#define RESET_WE_PIN  B11111011
+#define SET_WE_PIN    B00001000   // WE_PIN is A3 so is PC3
+#define RESET_WE_PIN  B11110111
 
 #define RESET_PORTD   B00000011
 #define RESET_PORTB   B11111100
@@ -46,11 +46,11 @@ const byte DATA_PINS[] = {2, 3, 4, 5, 6, 7, 8, 9};
 #define OE_MASK 0x02
 #define WE_MASK 0x04
         // They are all active-low!
-#define CONTROL_DISABLE ( WE_MASK |  OE_MASK |  CE_MASK)   // 111
-#define CONTROL_ENABLE  ( WE_MASK |  OE_MASK | !CE_MASK)   // 110
-#define CONTROL_READ    ( WE_MASK | !OE_MASK | !CE_MASK)   // 100
-#define CONTROL_WRITE   (!WE_MASK |  OE_MASK | !CE_MASK)   // 010
-#define CONTROL_SDP     (!WE_MASK |  OE_MASK |  CE_MASK)   // 011
+#define CONTROL_DISABLE ( WE_MASK | OE_MASK |  CE_MASK)   // 111
+#define CONTROL_ENABLE  ( WE_MASK | OE_MASK           )   // 110
+#define CONTROL_READ    ( WE_MASK                     )   // 100
+#define CONTROL_WRITE   (           OE_MASK           )   // 010
+#define CONTROL_SDP     (           OE_MASK |  CE_MASK)   // 011
 
 
 /* DELAYS */

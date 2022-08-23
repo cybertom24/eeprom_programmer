@@ -87,6 +87,7 @@ int ExternalEEPROM::pageWrite(uint16_t address, int length, uint8_t* data) {
     q_putOnDataPin(data[i]);
     // WE is active-low
     PORTC &= (RESET_WE_PIN);
+    delayMicroseconds(10);
     PORTC |= (SET_WE_PIN);
   }
   setControlBits(CONTROL_DISABLE);
@@ -117,7 +118,7 @@ void ExternalEEPROM::write(uint16_t address, int length, uint8_t* data) {
 uint8_t* ExternalEEPROM::read(uint16_t startAddress, uint8_t length) {
   if(length > MAX_READING_BUFFER_LENGTH)
     length = MAX_READING_BUFFER_LENGTH;
-  uint8_t* buffer = malloc(length * sizeof(uint8_t));
+  uint8_t* buffer = (uint8_t*) malloc(length * sizeof(uint8_t));
 
   for (uint16_t i = 0; i < length; i++)
     buffer[i] = read(startAddress + i);
@@ -234,6 +235,7 @@ void ExternalEEPROM::q_putOnDataPin(uint8_t data) {
 */
 void ExternalEEPROM::pulse(byte pin, boolean type) {
   digitalWrite(pin, type);
+  delayMicroseconds(10);
   digitalWrite(pin, !type);
 }
 

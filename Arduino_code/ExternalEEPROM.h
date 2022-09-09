@@ -94,7 +94,7 @@ class ExternalEEPROM {
     void putOnDataPin(uint8_t data);
     void q_putOnDataPin(uint8_t data);
     void setControlBits(uint8_t state);
-
+    void q_pulse(byte pin, boolean type);
     /* VARIABLES */
     byte mode = WRITING;
 };

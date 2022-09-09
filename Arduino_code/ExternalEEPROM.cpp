@@ -57,7 +57,7 @@ void ExternalEEPROM::write(uint16_t address, uint8_t data) {
   // Imposta il dato
   q_putOnDataPin(data);
   // Dai il segnale di scrittura
-  pulse(WE_PIN, LOW);
+  q_pulse(WE_PIN, LOW);
   // Aspetta il tempo che scriva
   delay(DELAY_WRITING);
 
@@ -86,9 +86,7 @@ int ExternalEEPROM::pageWrite(uint16_t address, int length, uint8_t* data) {
     q_setAddress(addr + i);
     q_putOnDataPin(data[i]);
     // WE is active-low
-    PORTC &= (RESET_WE_PIN);
-    delayMicroseconds(10);
-    PORTC |= (SET_WE_PIN);
+    q_pulse(WE_PIN, LOW);
   }
   setControlBits(CONTROL_DISABLE);
   delay(DELAY_WRITING);
@@ -235,8 +233,35 @@ void ExternalEEPROM::q_putOnDataPin(uint8_t data) {
 */
 void ExternalEEPROM::pulse(byte pin, boolean type) {
   digitalWrite(pin, type);
-  delayMicroseconds(10);
+  delayMicroseconds(DELAY_PULSE);
   digitalWrite(pin, !type);
+}
+
+/*
+  A quick version of the pulse() method. Only works for CE and WE
+*/
+void ExternalEEPROM::q_pulse(byte pin, boolean type) {
+  uint8_t set = 0, reset = 0;
+  switch(pin) {
+    case WE_PIN:
+      set = SET_WE_PIN;
+      reset = RESET_WE_PIN;
+      break;
+    case CE_PIN:
+      set = SET_CE_PIN;
+      reset = RESET_CE_PIN;
+      break;
+  }
+
+  if(type) {
+    PORTC |= set;
+    delayMicroseconds(DELAY_PULSE);
+    PORTC &= reset;
+  } else {
+    PORTC &= reset;
+    delayMicroseconds(DELAY_PULSE);
+    PORTC |= set;
+  }
 }
 
 void ExternalEEPROM::setControlBits(uint8_t state) {

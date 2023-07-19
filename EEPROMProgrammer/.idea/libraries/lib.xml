@@ -5,8 +5,12 @@
       <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jinput.jar!/" />
       <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/hamcrest-core-1.3.jar!/" />
       <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jSerialComm-2.9.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jnativehook-2.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/args4j-2.33.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/args4j-2.33.jar!/OSGI-OPT/src" />
+    </SOURCES>
   </library>
 </component>

@@ -1,0 +1,29 @@
+    --- Read ---
+Single:
+    read 0
+    read 0xFFFD
+Multiple (range):
+    read from 0 to 100
+    read 0 to 100
+    read 0 : 100
+    read 0xFF00 : . (to the end)
+Multiple (list):
+    read 0 100 200 300
+
+    --- Write ---
+Single:
+    write 0xAA in 0xFFFF
+    write 0xAA 0xFFFF
+Multiple (same data, list of address):
+    write 0xFF in 0x1234 0x6712 0xFFFF
+Multiple (same data, range of address):
+    write 0xAA in 0xFF00 : 0xFFFF
+    write 0xAA in 0xFF00 to 0xFFFF
+    write 0xAA 0xFF00 : 0xFFFF
+    write 0xAA 0xFF00 to 0xFFFF
+    write 0xAA in 0xFF00 : . (to the end)
+Multiple (start address, multiple data):
+    write 0xAA 10 0xFF 0x88 100 from 0xAD34
+Multiple (multiple address, multiple data):
+    write 0xFF 0xCC 100 in 0x1234 0x6712 0xFFFF
+

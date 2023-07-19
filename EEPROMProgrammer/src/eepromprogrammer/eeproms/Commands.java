@@ -3,30 +3,28 @@ package eepromprogrammer.eeproms;
 public class Commands {
 	
 	public static byte[] makeCommand(byte command, long... data) {
-		switch(command) {
-			case READ.SINGLE: {
-				byte[] message = { READ.SINGLE, 
+		byte[] message;
+		switch (command) {
+			case READ.SINGLE -> {
+				message = new byte[]{READ.SINGLE,
 						getDownByte(data[0]),
-						getUpByte(data[0]) };
-				return message;
+						getUpByte(data[0])};
 			}
-			case READ.MULTIPLE: {
-				byte[] message = { READ.MULTIPLE,
-						getDownByte(data[0]),
-						getUpByte(data[0]),
-						getDownByte(data[1]) };
-				return message;
-			}
-			case WRITE.SINGLE: {
-				byte[] message = { WRITE.SINGLE, 
+			case READ.MULTIPLE -> {
+				message = new byte[]{READ.MULTIPLE,
 						getDownByte(data[0]),
 						getUpByte(data[0]),
-						getDownByte(data[1]) };
-				return message;
+						getDownByte(data[1])};
 			}
-			default:
-				return null;
+			case WRITE.SINGLE -> {
+				message = new byte[]{WRITE.SINGLE,
+						getDownByte(data[0]),
+						getUpByte(data[0]),
+						getDownByte(data[1])};
+			}
+			default -> message = null;
 		}
+		return message;
 	}
 	
 	public static byte[] makeCommand(byte command, byte[] buffer, long... data) {

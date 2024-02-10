@@ -6,7 +6,6 @@ import cyberLib.io.Menu;
 import cyberLib.io.Printer;
 
 import java.io.*;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -34,7 +33,7 @@ public class EepromManager {
         this.eeprom = eeprom;
         for (String entry : MENU_ENTRIES)
             mainMenu.add(entry);
-        this.path = getAbsoulutePath(path);
+        this.path = getCanonicalPath(path);
         this.validate = validate;
     }
 
@@ -42,9 +41,9 @@ public class EepromManager {
         this.eeprom = eeprom;
         for (String entry : MENU_ENTRIES)
             mainMenu.add(entry);
-        this.path = getAbsoulutePath(path);
+        this.path = getCanonicalPath(path);
         this.validate = validate;
-        this.scriptPath = getAbsoulutePath(scriptPath);
+        this.scriptPath = getCanonicalPath(scriptPath);
     }
 
     public boolean mainMenu() throws IOException {
@@ -192,7 +191,16 @@ public class EepromManager {
                 for(long l : addresses) {
                     System.out.printf("0x%04x%n", l);
                 }
-                return true;
+
+                boolean right = true;
+                for (long addr : addresses) {
+                    if(!eeprom.writeSingle(addr, data)) {
+                        right = false;
+                        break;
+                    }
+                }
+
+                return right;
             }
 
             // List of data and list of addresses
@@ -265,6 +273,7 @@ public class EepromManager {
 
                 System.out.printf("first address: 0x%04x%n", firstAddress);
                 System.out.printf("last address: 0x%04x%n", lastAddress);
+                readMultiple(firstAddress, lastAddress);
                 return true;
             }
 
@@ -282,17 +291,18 @@ public class EepromManager {
             }
 
             System.out.printf("address: 0x%04x%n", address);
+            readSingle(address);
         }
         else if (isIgnoreCase(action, "file", "f")) {
             if (arguments.length > 1) {
-                path = getAbsoulutePath(arguments[1]);
+                path = getCanonicalPath(arguments[1]);
             }
 
             System.out.println("file set to: " + path);
         }
         else if (isIgnoreCase(action, "upload", "u")) {
             if (arguments.length > 1) {
-                String newPath = getAbsoulutePath(arguments[1]);
+                String newPath = getCanonicalPath(arguments[1]);
                 if(newPath == null) {
                     System.out.println("Error: failed to parse file path");
                     return true;
@@ -301,11 +311,16 @@ public class EepromManager {
                 System.out.println("Uploading file: " + newPath);
             }
 
-            System.out.println("Uploading file: " + path);
+            try {
+                writeFile(new File(path), 0, validate);
+            } catch (IOException e) {
+                System.out.println("Error: something went wrong while uploading the file");
+                e.printStackTrace();
+            }
         }
         else if (isIgnoreCase(action, "download", "d")) {
             if (arguments.length > 1) {
-                String newPath = getAbsoulutePath(arguments[1]);
+                String newPath = getCanonicalPath(arguments[1]);
                 if(newPath == null) {
                     System.out.println("Error: failed to parse file path");
                     return true;
@@ -314,7 +329,12 @@ public class EepromManager {
                 System.out.println("Downloading memory content on file: " + newPath);
             }
 
-            System.out.println("Downloading memory content on file: " + path);
+            try {
+                readFile(new File(path));
+            } catch (IOException e) {
+                System.out.println("> Error: something went wrong while downloading the EEPROM's content");
+                e.printStackTrace();
+            }
         }
         else if (isIgnoreCase(action, "validate", "v")) {
             if (arguments.length > 1) {
@@ -334,7 +354,7 @@ public class EepromManager {
                 return true;
             }
 
-            scriptPath = getAbsoulutePath(arguments[1]);
+            scriptPath = getCanonicalPath(arguments[1]);
 
             if(scriptPath == null) {
                 System.out.println("Error: failed to parse file path");
@@ -347,14 +367,23 @@ public class EepromManager {
             exit = true;
             return false;
         }
+        else if (isIgnoreCase(action, "test", "t")) {
+            StringBuilder message = new StringBuilder();
+            for (int i = 1; i < arguments.length; i++) {
+                message.append(arguments[i]);
+                message.append(" ");
+            }
+            byte[] packet = message.toString().getBytes();
+            eeprom.test(packet);
+            return true;
+        }
         else
             System.out.println("Command not recognized");
 
         return true;
     }
 
-    public void readSingle() {
-        int addr = (int) Input.askHexOrInt("Insert addr");
+    public void readSingle(long addr) {
         System.out.printf("0x%04x: 0x%02x\n", addr, eeprom.readSingle(addr));
     }
 
@@ -368,17 +397,21 @@ public class EepromManager {
             System.out.printf("Byte 0x%02x was not written in address 0x%04x\n", data, addr);
     }
 
-    public void readMultiple() {
-        int fromAddr = (int) Input.askHexOrInt("Insert from addr");
-        int toAddr = (int) Input.askHexOrInt("Insert to addr");
+    public void readMultiple(long fromAddr, long toAddr) {
+        if(toAddr < fromAddr) {
+            System.out.println("toAddress is less than fromAddress");
+            return;
+        }
 
-        byte[] buff = eeprom.readMultiple(fromAddr, toAddr);
-        Printer.printByteArray(buff);
+        long length = Math.min(toAddr - fromAddr, READ_BUFFER_LENGTH);
+
+        byte[] data = eeprom.readMultiple(fromAddr, length);
+        Printer.printByteArray(data);
     }
 
     public void writeMultiple() {
         int fromAddr = (int) Input.askHexOrInt("Insert from addr");
-        int length = (int) Input.askHexOrInt("Insert from length");
+        int length = (int) Input.askHexOrInt("Insert length");
 
         byte[] buffer = new byte[length];
         for (int i = 0; i < buffer.length; i++) {
@@ -391,25 +424,17 @@ public class EepromManager {
     /**
      * Metodo per leggere la memoria della eeprom e trascriverla su file
      *
-     * @param file
+     * @param file file to save the EEPROM's content on
      */
     public void readFile(File file) throws IOException {
-        System.out.println("> Reading the eeprom memory and transcribing it to the file");
-
-
+        System.out.println("Downloading memory content on file: " + file.getAbsolutePath());
         try (BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file))) {
             int exProgress = 0;
             long address = 0;
             while (address < eeprom.maxAddress) {
                 long length = Math.min(READ_BUFFER_LENGTH, eeprom.maxAddress - address);
-                byte[] buffer = eeprom.readMultiple(address, length);
-
-                if (buffer.length <= 2)
-                    break;
-
-                // Skip the header
-                for (int i = 2; i < buffer.length; i++)
-                    outStream.write(buffer[i]);
+                byte[] data = eeprom.readMultiple(address, length);
+                outStream.write(data);
 
                 int progress = (int) (100 * ((double) address / eeprom.maxAddress));
                 if (progress % 5 == 0 && exProgress != progress) {
@@ -417,17 +442,17 @@ public class EepromManager {
                     exProgress = progress;
                 }
 
-                address += buffer.length - 2;
+                address += data.length;
             }
             System.out.println("> Done");
         }
     }
 
     public void writeFile(File file, long startAddress, boolean validate) throws IOException {
-        System.out.println("> Writing the file into eeprom memory");
+        System.out.println("Uploading file: " + file.getAbsolutePath() + " starting from address: " + String.format("0x%04x", startAddress));
 
         if (!eeprom.checkWrite())
-            throw new IOException("Cannot write on EEPROM");
+            throw new IOException("> Error: Cannot write on EEPROM");
 
         try (InputStream inStream = new BufferedInputStream(new FileInputStream(file))) {
             int exProgress = 0;
@@ -439,7 +464,8 @@ public class EepromManager {
                 if (buffer.length < 1)
                     break;
 
-                eeprom.writeMultiple(address, buffer);
+                if (!eeprom.writeMultiple(address, buffer))
+                    throw new IOException("Failed to upload file");
 
                 int progress = (int) (100 * ((double) address / eeprom.maxAddress));
                 if (progress % 5 == 0 && exProgress != progress) {
@@ -546,16 +572,16 @@ public class EepromManager {
         }
     }
 
-    public String getAbsoulutePath(String path) {
-        File currentDirectory = new File("");
-        String currentPath = currentDirectory.getAbsolutePath();
-        File yourFile = new File(currentPath + "\\" + path);
-
-        try {
-            return yourFile.getCanonicalPath();
-        } catch (IOException e) {
+    public String getCanonicalPath(String path) {
+        if(path == null)
             return null;
+
+        File file = new File(path);
+        try {
+            return file.getCanonicalPath();
+        }catch (IOException ignored) {
         }
+        return null;
     }
 
     private static boolean isIgnoreCase(String string, String... aliases) {

@@ -21,4 +21,6 @@ public abstract class Eeprom {
 	public abstract boolean checkSingle(long address, byte data);
 
 	public abstract boolean checkWrite();
+
+	public abstract void test(byte[] message);
 }

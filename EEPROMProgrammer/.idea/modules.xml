@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/CyberLib.iml" filepath="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/CyberLib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/CyberLib.iml" filepath="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/CyberLib.iml" />
       <module fileurl="file://$PROJECT_DIR$/EEPROMProgrammer.iml" filepath="$PROJECT_DIR$/EEPROMProgrammer.iml" />
     </modules>
   </component>

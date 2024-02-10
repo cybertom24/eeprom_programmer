@@ -6,53 +6,76 @@ import cyberLib.arduino.ArduinoSerial;
 import cyberLib.arduino.BaudRates;
 import cyberLib.io.Printer;
 
+import javax.sql.CommonDataSource;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
+
 public class Eeprom_28C256 extends Eeprom {
 	
 	private static final String myName = "28C256";
 	private static final int myMaxAddress = 0x8000;
-	private static final BaudRates BAUD_RATE = BaudRates.$74880;
+	private static final BaudRates BAUD_RATE = BaudRates.$115200;
 	
 	private static final int MAX_READ_BUFFER_LENGTH = 30;
 	
 	private ArduinoSerial serial;
-	
-	public Eeprom_28C256(String port) throws SerialPortTimeoutException {
+
+	public Eeprom_28C256(String port) throws SerialPortTimeoutException, IOException {
 		super(myName, myMaxAddress);
 		
 		serial = new ArduinoSerial(port, BAUD_RATE);
-		serial.waitForSignal();
+
+		while(serial.available() < Commands.PACKET_LENGTH)
+			;
+		byte[] packet = serial.readBytes(Commands.PACKET_LENGTH);
+		if(packet[0] != Commands.UTIL.READY)
+			throw new IOException("Didn't receive UTIL_READY from arduino");
 		serial.clear();
 	}
 
 	@Override
 	public byte readSingle(long address) {
 		byte[] message = Commands.makeCommand(Commands.READ.SINGLE, address);
-		byte response = serial.awaitResponse(message)[0];
-		return response;
+		byte[] packet = serial.awaitResponse(message, Commands.PACKET_LENGTH);
+		serial.clear();
+		return packet[2];
 	}
 
 	@Override
 	public byte[] readMultiple(long fromAddress, long length) {
 		length = Math.min(length, MAX_READ_BUFFER_LENGTH);
-		
 		byte[] message = Commands.makeCommand(Commands.READ.MULTIPLE, fromAddress, length);
-		byte[] response = serial.awaitResponse(message);
-		return response;
+		byte[] packet = serial.awaitResponse(message, Commands.PACKET_LENGTH);
+		serial.clear();
+
+		if(packet[0] != Commands.UTIL.NEW_PACKET)
+			serial.clear();
+
+		int dataLength = packet[1];
+		byte[] data = new byte[dataLength];
+		System.arraycopy(packet, 2, data, 0, dataLength);
+		return data;
 	}
 
 	@Override
 	public boolean writeSingle(long address, byte data) {
 		byte[] writeMessage = Commands.makeCommand(Commands.WRITE.SINGLE, address, data);
-		serial.awaitResponse(writeMessage);
+		byte[] packet = serial.awaitResponse(writeMessage, Commands.PACKET_LENGTH);
+		serial.clear();
+
+		if(packet[0] != Commands.UTIL.READY)
+			return false;
+
 		return checkSingle(address, data);
 	}
 
 	@Override
 	public boolean writeMultiple(long address, byte[] data) {
 		byte[] message = Commands.makeCommand(Commands.WRITE.MULTIPLE, data, address);
-		byte response = serial.awaitResponse(message)[0];
+		byte[] packet = serial.awaitResponse(message, Commands.PACKET_LENGTH);
 		
-		return response == Commands.UTIL.READY;
+		return packet[0] == Commands.UTIL.READY;
 	}
 
 	/**
@@ -77,5 +100,13 @@ public class Eeprom_28C256 extends Eeprom {
 		if(!success)
 			return false;
 		return writeSingle(randomAddr, old);
+	}
+
+	public void test(byte[] message) {
+		byte[] response = serial.awaitResponse(message, Commands.PACKET_LENGTH);
+		for(byte b : response) {
+			System.out.printf("%c", b);
+		}
+		System.out.println();
 	}
 }

@@ -2,7 +2,7 @@
 #define ExternalEEPROM_h
 
 /* LIBRARIES */
-#include "arduino.h"
+#include "Arduino.h"
 
 /* COSTANTS */
 // For controlling the two Si-Po

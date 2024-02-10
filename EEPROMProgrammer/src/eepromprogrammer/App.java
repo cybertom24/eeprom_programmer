@@ -1,9 +1,11 @@
 package eepromprogrammer;
 
 import com.fazecast.jSerialComm.SerialPortInvalidPortException;
+import com.fazecast.jSerialComm.SerialPortTimeoutException;
 import cyberLib.io.Input;
 import eepromprogrammer.eeproms.Eeprom;
 import eepromprogrammer.eeproms.EepromManager;
+import eepromprogrammer.eeproms.Eeprom_28C256;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -28,7 +30,7 @@ public class App {
 		public String file = null;
 
 		@Option(name = "-p", aliases = "--port",
-				usage = "Port to be used", metaVar = "port")
+				usage = "Port to be used", metaVar = "port", required = true)
 		public String port = "COM11";
 
 		@Option(name = "-r", aliases = "--read",
@@ -38,6 +40,11 @@ public class App {
 		@Option(name = "-w", aliases = "--write",
 				usage = "Read the content of the file and write it to the EEPROM", metaVar = "write")
 		public boolean write = false;
+
+		@Option(name = "-sa", aliases = "--startaddress",
+				usage = "Address from where to start writing the file", metaVar = "startAddress")
+		public long startAddress = 0;
+
 	}
 
 	public static void main(String[] args) throws SerialPortInvalidPortException, IOException {
@@ -63,8 +70,23 @@ public class App {
 		System.out.println(printOptions(options));
 		System.out.println("-----------------------------------------");
 		System.out.println("> Opening port...");
-		Eeprom eeprom = null; //new Eeprom_28C256(options.port);
-		EepromManager manager = null;
+
+		// Check if the port is valid
+		if(!checkCommPortFormat(options.port)) {
+			System.out.println("> Error: wrong port format");
+			System.exit(1);
+		}
+
+		Eeprom eeprom = null;
+		try {
+			eeprom = new Eeprom_28C256(options.port);
+		} catch (SerialPortTimeoutException e) {
+			System.out.println("> Error: could not open port " + options.port);
+			System.out.println("If the port is written right try to use 'sudo chown <port> <username>' or 'sudo usermod -a -G <port group (often is dialout)> <username>'");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		EepromManager manager;
 		if(options.script == null)
 			manager = new EepromManager(eeprom, options.file, options.validate);
 		else
@@ -78,7 +100,7 @@ public class App {
 		} else if (!options.read && options.write) {
 			if(options.file == null)
 				options.file = Input.askString("Insert path");
-			manager.writeFile(new File(options.file), 0, true);
+			manager.writeFile(new File(options.file), options.startAddress, options.validate);
 		} else {
 			manager.mainLoop();
 		}
@@ -119,5 +141,18 @@ public class App {
 		builder.append(options.validate);
 
 		return builder.toString();
+	}
+
+	private static boolean checkCommPortFormat(String port) {
+		String os = System.getProperty("os.name").toLowerCase();
+
+		// Windows
+		if(os.contains("win"))
+			return port.matches("^COM[0-9]+$");
+		// Unix / Linux
+		else if(os.contains("nix") || os.contains("nux") || os.contains("aix"))
+			return port.matches("^/dev/ttyUSB[0-9]+$");
+
+		return false;
 	}
 }

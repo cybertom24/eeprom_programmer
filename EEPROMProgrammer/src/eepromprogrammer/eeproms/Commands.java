@@ -1,7 +1,9 @@
 package eepromprogrammer.eeproms;
 
 public class Commands {
-	
+
+	public static final int PACKET_LENGTH = 32;
+
 	public static byte[] makeCommand(byte command, long... data) {
 		byte[] message;
 		switch (command) {
@@ -24,27 +26,50 @@ public class Commands {
 			}
 			default -> message = null;
 		}
-		return message;
+
+		if (message == null)
+			return null;
+
+		return fill(message);
 	}
 	
 	public static byte[] makeCommand(byte command, byte[] buffer, long... data) {
-		switch(command) {
-			case WRITE.MULTIPLE: {
-				// 0x31 [1B length] [2B startAddress] [xB buffer]
-				byte[] header = { WRITE.MULTIPLE,
+		byte message[] = null;
+		switch (command) {
+			case WRITE.MULTIPLE -> {
+				// 0x21 [1B length] [2B startAddress] [xB buffer]
+				byte[] header = {WRITE.MULTIPLE,
 						getDownByte(buffer.length),
 						getDownByte(data[0]),
-						getUpByte(data[0]) };
-				
-				byte[] message = new byte[header.length + buffer.length];
+						getUpByte(data[0])};
+
+				message = new byte[header.length + buffer.length];
 				System.arraycopy(header, 0, message, 0, header.length);
 				System.arraycopy(buffer, 0, message, header.length, buffer.length);
-				
-				return message;
 			}
-			default:
-				return null;
+			default -> {
+				message = null;
+			}
 		}
+
+		if (message == null)
+			return null;
+
+		return fill(message);
+	}
+
+	private static byte[] fill(byte[] message) {
+		if(message.length == PACKET_LENGTH)
+			return message;
+
+		byte[] packet = new byte[PACKET_LENGTH];
+		for (int i = 0; i < PACKET_LENGTH; i++) {
+			if (i < message.length)
+				packet[i] = message[i];
+			else
+				packet[i] = 0;
+		}
+		return packet;
 	}
 	
 	private static byte getUpByte(long value) {

@@ -4,12 +4,12 @@
     <root id="archive" name="EEPROMProgrammer.jar">
       <element id="module-output" name="EEPROMProgrammer" />
       <element id="module-output" name="CyberLib" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/hamcrest-core-1.3.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jinput.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jnativehook-2.1.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/jSerialComm-2.9.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/junit-4.13.2.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../Librerie/Java_libraries/cyberlib/CyberLib/lib/args4j-2.33.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/args4j-2.33.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/hamcrest-core-1.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/jinput.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/jnativehook-2.1.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/jSerialComm-2.9.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Programming/cyberlib/CyberLib/lib/junit-4.13.2.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
